@@ -59,7 +59,7 @@ https://images.svc.ui.com/?u=https%3A%2F%2Fstatic.ui.com%2Ffingerprint%2Fui%2Fim
   predictable details/back navigation.
 - Make cache ownership, reuse, refresh, and failure behavior explicit and testable.
 - Match inspected Figma typography, spacing, colors, and imagery. Provide readable
-  text, accessible semantics, suitable touch targets, and image descriptions.
+  text, suitable touch targets, and image descriptions.
 - Keep changes focused and preserve unrelated work. Separate verified facts from assumptions.
 
 ## Validation and delivery

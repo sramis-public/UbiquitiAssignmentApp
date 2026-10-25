@@ -1,0 +1,4 @@
+<resources>
+    <string name="product_image_missing">No image</string>
+    <string name="product_image_failed">Image unavailable</string>
+</resources>
