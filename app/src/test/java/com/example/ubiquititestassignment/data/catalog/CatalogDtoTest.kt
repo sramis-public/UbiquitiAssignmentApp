@@ -35,10 +35,9 @@ class CatalogDtoTest {
         assertThrows(SerializationException::class.java) { parse("{}") }
     }
 
-    @Test fun missingRequiredFieldsAndWrongTypesFail() {
+    @Test fun malformedCatalogAndWrongTypesFail() {
         listOf(
-            """{"devices":[{"product":{"name":"A"}}]}""",
-            """{"devices":[{"id":"a","product":{}}]}""",
+            "{",
             """{"devices":null}""",
             """{"devices":[{"id":"a","product":{"name":"A"},"images":[]}]}""",
             """{"devices":[{"id":"a","product":{"name":"A"},"deviceType":{}}]}""",
@@ -47,15 +46,50 @@ class CatalogDtoTest {
         }
     }
 
-    @Test fun blankIdsNamesAndDuplicateIdsFail() {
-        listOf(
-            """{"devices":[{"id":" ","product":{"name":"A"}}]}""",
-            """{"devices":[{"id":"a","product":{"name":" "}}]}""",
-            """{"devices":[{"id":"a","product":{"name":"A"}},{"id":"a","product":{"name":"B"}}]}""",
-        ).forEach { body ->
-            assertThrows(InvalidCatalogException::class.java) { parse(body) }
+    @Test fun invalidProductsAreSkippedWithoutDroppingValidNeighbors() {
+        invalidRecords.forEach { invalid ->
+            val products = parse("""
+                {"devices":[
+                    {"id":"first","product":{"name":"First"}},
+                    $invalid,
+                    {"id":"last","product":{"name":"Last"}}
+                ]}
+            """.trimIndent())
+            assertEquals(invalid, listOf("first", "last"), products.map { it.id })
         }
     }
+
+    @Test fun duplicatesKeepFirstValidProductInSourceOrder() {
+        val products = parse("""
+            {"devices":[
+                {"id":"a","product":{"name":" "}},
+                {"id":"b","product":{"name":"B"}},
+                {"id":"a","product":{"name":"First valid A"}},
+                {"id":"a","product":{"name":"Duplicate A"}}
+            ]}
+        """.trimIndent())
+        assertEquals(listOf(
+            CatalogProduct("b", "B", null, null, null),
+            CatalogProduct("a", "First valid A", null, null, null),
+        ), products)
+    }
+
+    @Test fun catalogWithOnlyInvalidProductsIsEmpty() {
+        assertTrue(parse("""{"devices":[${invalidRecords.joinToString(",")}]}""").isEmpty())
+    }
+
+    private val invalidRecords = listOf(
+        """{"product":{"name":"Missing ID"}}""",
+        """{"id":null,"product":{"name":"Null ID"}}""",
+        """{"id":"","product":{"name":"Empty ID"}}""",
+        """{"id":" ","product":{"name":"Blank ID"}}""",
+        """{"id":"a"}""",
+        """{"id":"a","product":null}""",
+        """{"id":"a","product":{}}""",
+        """{"id":"a","product":{"name":null}}""",
+        """{"id":"a","product":{"name":""}}""",
+        """{"id":"a","product":{"name":" "}}""",
+    )
 
     private fun parse(body: String) = json.decodeFromString<CatalogDto>(body).toProducts()
 }

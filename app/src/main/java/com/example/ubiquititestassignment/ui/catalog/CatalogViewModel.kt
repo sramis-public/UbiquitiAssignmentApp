@@ -43,11 +43,18 @@ class CatalogViewModel @Inject constructor(
         observationJob = viewModelScope.launch {
             try {
                 repository.catalog.collect { snapshot ->
-                    observation.update {
+                    observation.update { previous ->
+                        val hasObservedSnapshot = previous.hasObservedSnapshot || snapshot != null
                         CatalogObservation(
                             catalog = snapshot?.let {
                                 CatalogAvailability.Available(it.products.toList())
-                            } ?: CatalogAvailability.Unavailable,
+                            } ?: if (hasObservedSnapshot) {
+                                CatalogAvailability.Unavailable
+                            } else {
+                                // Refresh can finish before Room emits the saved catalog.
+                                CatalogAvailability.Loading
+                            },
+                            hasObservedSnapshot = hasObservedSnapshot,
                         )
                     }
                 }
@@ -88,12 +95,15 @@ class CatalogViewModel @Inject constructor(
     private data class CatalogObservation(
         val catalog: CatalogAvailability = CatalogAvailability.Loading,
         val failed: Boolean = false,
+        val hasObservedSnapshot: Boolean = false,
     ) {
         fun toUiState(refresh: CatalogRefreshState, filters: CatalogFilters): CatalogUiState {
             val products = (catalog as? CatalogAvailability.Available)?.products.orEmpty()
             val lineIds = filters.lines.mapTo(HashSet()) { it.id }
             return CatalogUiState(
-                catalog = catalog,
+                catalog = if (catalog == CatalogAvailability.Loading &&
+                    refresh is CatalogRefreshState.Failed
+                ) CatalogAvailability.Unavailable else catalog,
                 refresh = refresh,
                 filters = filters,
                 filteredProducts = products.filter {

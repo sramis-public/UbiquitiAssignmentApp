@@ -8,15 +8,15 @@ internal data class CatalogDto(val devices: List<DeviceDto>)
 
 @Serializable
 internal data class DeviceDto(
-    val id: String,
-    val product: ProductDto,
+    val id: String? = null,
+    val product: ProductDto? = null,
     val line: LineDto? = null,
     val images: ImagesDto? = null,
     val deviceType: String? = null,
 )
 
 @Serializable
-internal data class ProductDto(val name: String)
+internal data class ProductDto(val name: String? = null)
 
 @Serializable
 internal data class LineDto(val id: String? = null, val name: String? = null)
@@ -24,18 +24,19 @@ internal data class LineDto(val id: String? = null, val name: String? = null)
 @Serializable
 internal data class ImagesDto(@SerialName("default") val defaultImageId: String? = null)
 
-internal class InvalidCatalogException(message: String) : Exception(message)
-
-/** Validate the whole representation before any persistent data is replaced. */
+/** Skip invalid records and duplicate IDs, keeping the first valid product in source order. */
 internal fun CatalogDto.toProducts(): List<CatalogProduct> {
     val ids = HashSet<String>()
-    return devices.map { device ->
-        if (device.id.isBlank() || device.product.name.isBlank() || !ids.add(device.id)) {
-            throw InvalidCatalogException("Product IDs and names must be nonblank; IDs must be unique")
+    return devices.mapNotNull { device ->
+        val id = device.id
+        val name = device.product?.name
+        if (id.isNullOrBlank() || name.isNullOrBlank() || !ids.add(id)) {
+            // TODO: Log skipped invalid products and report them to the backend.
+            return@mapNotNull null
         }
         CatalogProduct(
-            id = device.id,
-            name = device.product.name,
+            id = id,
+            name = name,
             lineId = device.line?.id?.takeIf { it.isNotBlank() },
             lineName = device.line?.name?.takeIf { it.isNotBlank() },
             defaultImageId = device.images?.defaultImageId?.takeIf { it.isNotBlank() },
