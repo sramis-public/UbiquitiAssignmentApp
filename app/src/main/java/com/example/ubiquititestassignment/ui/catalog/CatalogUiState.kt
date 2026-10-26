@@ -3,8 +3,19 @@ package com.example.ubiquititestassignment.ui.catalog
 import com.example.ubiquititestassignment.data.catalog.CatalogProduct
 import com.example.ubiquititestassignment.data.catalog.CatalogRefreshState
 
-/** Selection only: Cameras and IoT filtering awaits a confirmed UIDB mapping. */
-enum class CatalogCategory { All, Cameras, IoT }
+/** Categories match UIDB deviceType independently of product line. */
+enum class CatalogCategory {
+    All, Cameras, IoT;
+
+    internal fun matches(product: CatalogProduct): Boolean = when (this) {
+        All -> true
+        Cameras -> product.deviceType == "camera"
+        IoT -> when (product.deviceType) {
+            "sensor", "light", "doorlock", "chime" -> true
+            else -> false
+        }
+    }
+}
 
 /** Additional multi-select filters, matched by UIDB line.id rather than display names. */
 enum class CatalogLine(val id: String) {

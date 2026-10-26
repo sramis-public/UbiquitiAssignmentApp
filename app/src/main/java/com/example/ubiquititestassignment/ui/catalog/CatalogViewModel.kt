@@ -97,7 +97,7 @@ class CatalogViewModel @Inject constructor(
                 refresh = refresh,
                 filters = filters,
                 filteredProducts = products.filter {
-                    lineIds.isEmpty() || it.lineId in lineIds
+                    filters.category.matches(it) && (lineIds.isEmpty() || it.lineId in lineIds)
                 },
                 observationFailed = failed,
             )

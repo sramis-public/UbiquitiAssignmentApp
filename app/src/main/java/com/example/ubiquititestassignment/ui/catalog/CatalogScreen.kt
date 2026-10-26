@@ -189,7 +189,7 @@ private fun CatalogScreen(
                         CatalogMessage(
                             title = stringResource(R.string.catalog_empty),
                             message = stringResource(
-                                if (state.filters.lines.isEmpty()) R.string.catalog_empty_description
+                                if (state.catalog.products.isEmpty()) R.string.catalog_empty_description
                                 else R.string.catalog_filters_empty_description,
                             ),
                             actionLabel = stringResource(R.string.catalog_refresh),

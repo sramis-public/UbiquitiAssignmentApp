@@ -12,6 +12,7 @@ internal data class DeviceDto(
     val product: ProductDto,
     val line: LineDto? = null,
     val images: ImagesDto? = null,
+    val deviceType: String? = null,
 )
 
 @Serializable
@@ -38,6 +39,7 @@ internal fun CatalogDto.toProducts(): List<CatalogProduct> {
             lineId = device.line?.id?.takeIf { it.isNotBlank() },
             lineName = device.line?.name?.takeIf { it.isNotBlank() },
             defaultImageId = device.images?.defaultImageId?.takeIf { it.isNotBlank() },
+            deviceType = device.deviceType?.takeIf { it.isNotBlank() },
         )
     }
 }

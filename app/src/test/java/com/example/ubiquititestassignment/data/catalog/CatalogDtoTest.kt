@@ -9,19 +9,25 @@ class CatalogDtoTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test fun parsesOnlyNeededFieldsAndIgnoresUnknownData() {
-        val products = parse("""{"version":"ignored","devices":[{"id":"a","product":{"name":"Camera","abbrev":"x"},"line":{"id":"unifi-protect","name":"UniFi Protect"},"images":{"default":"hash"},"extra":true}]}""")
-        assertEquals(listOf(CatalogProduct("a", "Camera", "unifi-protect", "UniFi Protect", "hash")), products)
+        val products = parse("""{"version":"ignored","devices":[{"id":"a","product":{"name":"Camera","abbrev":"x"},"line":{"id":"unifi-protect","name":"UniFi Protect"},"images":{"default":"hash"},"deviceType":"camera","extra":true}]}""")
+        assertEquals(listOf(CatalogProduct("a", "Camera", "unifi-protect", "UniFi Protect", "hash", "camera")), products)
     }
 
     @Test fun optionalFieldsMayBeMissingOrNull() {
-        val products = parse("""{"devices":[{"id":"a","product":{"name":"A"}},{"id":"b","product":{"name":"B"},"line":null,"images":null}]}""")
+        val products = parse("""{"devices":[{"id":"a","product":{"name":"A"}},{"id":"b","product":{"name":"B"},"line":null,"images":null,"deviceType":null}]}""")
         assertEquals(listOf(CatalogProduct("a", "A", null, null, null),
             CatalogProduct("b", "B", null, null, null)), products)
     }
 
     @Test fun blankOptionalValuesBecomeNull() {
         assertEquals(CatalogProduct("a", "A", null, null, null),
-            parse("""{"devices":[{"id":"a","product":{"name":"A"},"line":{"id":"","name":" "},"images":{"default":""}}]}""").single())
+            parse("""{"devices":[{"id":"a","product":{"name":"A"},"line":{"id":"","name":" "},"images":{"default":""},"deviceType":" "}]}""").single())
+    }
+
+    @Test fun unknownDeviceTypeIsPreserved() {
+        assertEquals("future-type", parse(
+            """{"devices":[{"id":"a","product":{"name":"A"},"deviceType":"future-type"}]}"""
+        ).single().deviceType)
     }
 
     @Test fun emptyDevicesIsValidButMissingDevicesIsNot() {
@@ -35,6 +41,7 @@ class CatalogDtoTest {
             """{"devices":[{"id":"a","product":{}}]}""",
             """{"devices":null}""",
             """{"devices":[{"id":"a","product":{"name":"A"},"images":[]}]}""",
+            """{"devices":[{"id":"a","product":{"name":"A"},"deviceType":{}}]}""",
         ).forEach { body ->
             assertThrows(SerializationException::class.java) { parse(body) }
         }

@@ -35,8 +35,8 @@ class CatalogScreenTest {
     val compose = createComposeRule()
 
     @Test
-    fun categoryTabsUpdateSelectionAndKeepRowsWhileMappingIsUnresolved() {
-        var state by mutableStateOf(availableState())
+    fun categoryTabsRenderProductsByDeviceType() {
+        var state by mutableStateOf(availableState(listOf(accessPoint, camera, sensor)))
         val selected = mutableListOf<CatalogCategory>()
         compose.setContent {
             MaterialTheme {
@@ -44,7 +44,10 @@ class CatalogScreenTest {
                     state = state,
                     onCategorySelected = {
                         selected += it
-                        state = state.copy(filters = state.filters.copy(category = it))
+                        state = state.copy(
+                            filters = state.filters.copy(category = it),
+                            filteredProducts = listOf(accessPoint, camera, sensor).filter(it::matches),
+                        )
                     },
                     onLineToggled = {},
                     onRefresh = {},
@@ -55,9 +58,13 @@ class CatalogScreenTest {
 
         compose.onNodeWithText("All").assertIsSelected()
         compose.onNodeWithText("Cameras").performClick().assertIsSelected()
-        assertBothProductsVisible()
+        compose.onNodeWithText(camera.name).assertIsDisplayed()
+        compose.onNodeWithText(accessPoint.name).assertDoesNotExist()
+        compose.onNodeWithText(sensor.name).assertDoesNotExist()
         compose.onNodeWithText("IoT").performClick().assertIsSelected()
-        assertBothProductsVisible()
+        compose.onNodeWithText(sensor.name).assertIsDisplayed()
+        compose.onNodeWithText(accessPoint.name).assertDoesNotExist()
+        compose.onNodeWithText(camera.name).assertDoesNotExist()
         compose.onNodeWithText("All").performClick().assertIsSelected()
         assertBothProductsVisible()
         compose.runOnIdle {
@@ -132,6 +139,17 @@ class CatalogScreenTest {
         compose.onNodeWithText("Refresh").performClick()
 
         compose.runOnIdle { assertEquals(1, refreshCount) }
+    }
+
+    @Test
+    fun categoryWithoutMatchesShowsFilterMessageForNonemptyCatalog() {
+        render(availableState(listOf(accessPoint)).copy(
+            filters = CatalogFilters(category = CatalogCategory.Cameras),
+            filteredProducts = emptyList(),
+        ))
+
+        compose.onNodeWithText("Try changing the category or product-line filters.").assertIsDisplayed()
+        compose.onNodeWithText("The catalog is empty. Refresh to check for products.").assertDoesNotExist()
     }
 
     @Test
@@ -249,6 +267,16 @@ class CatalogScreenTest {
         lineId = CatalogLine.UniFi.id,
         lineName = "UniFi",
         defaultImageId = null,
+        deviceType = "access-point",
+    )
+
+    private val sensor = CatalogProduct(
+        id = "sensor-product",
+        name = "Sensor fixture",
+        lineId = CatalogLine.UniFiProtect.id,
+        lineName = "UniFi Protect",
+        defaultImageId = null,
+        deviceType = "sensor",
     )
 
     private val camera = CatalogProduct(
@@ -257,5 +285,6 @@ class CatalogScreenTest {
         lineId = CatalogLine.UniFiProtect.id,
         lineName = "UniFi Protect",
         defaultImageId = null,
+        deviceType = "camera",
     )
 }
