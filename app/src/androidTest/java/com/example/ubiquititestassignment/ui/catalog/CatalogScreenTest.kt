@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -142,6 +144,108 @@ class CatalogScreenTest {
     }
 
     @Test
+    fun pullToRefreshPreservesFiltersAndRowsAndTracksCompletion() {
+        var state by mutableStateOf(availableState(listOf(camera)).copy(
+            filters = CatalogFilters(
+                category = CatalogCategory.Cameras,
+                lines = setOf(CatalogLine.UniFiProtect),
+            ),
+        ))
+        var refreshCount = 0
+        compose.setContent {
+            MaterialTheme {
+                CatalogContent(
+                    state = state,
+                    onCategorySelected = {},
+                    onLineToggled = {},
+                    onRefresh = {
+                        refreshCount++
+                        state = state.copy(refresh = CatalogRefreshState.Refreshing)
+                    },
+                    onRetry = {},
+                )
+            }
+        }
+
+        pullToRefresh()
+
+        compose.onNodeWithText("Cameras").assertIsSelected()
+        compose.onNodeWithText(camera.name).assertIsDisplayed()
+        val spinner = hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)
+        compose.onNode(spinner).assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(1, refreshCount)
+            assertEquals(setOf(CatalogLine.UniFiProtect), state.filters.lines)
+        }
+
+        // Another pull during the same request must not invoke refresh again.
+        pullToRefresh()
+        compose.runOnIdle { assertEquals(1, refreshCount) }
+
+        compose.runOnIdle { state = state.copy(refresh = CatalogRefreshState.Updated) }
+        compose.onNode(spinner).assertDoesNotExist()
+        compose.onNodeWithText(camera.name).assertIsDisplayed()
+
+        pullToRefresh()
+        compose.runOnIdle {
+            assertEquals(2, refreshCount)
+            state = state.copy(refresh = CatalogRefreshState.Failed(CatalogRefreshFailure.Network))
+        }
+        compose.onNode(spinner).assertDoesNotExist()
+        compose.onNodeWithText(camera.name).assertIsDisplayed()
+        compose.onNodeWithText(
+            "Products could not be refreshed. Showing the saved catalog.",
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyCatalogCanBePulledToRefresh() {
+        var refreshCount = 0
+        render(availableState(emptyList()), onRefresh = { refreshCount++ })
+
+        pullToRefresh()
+
+        compose.onNodeWithText("No products found").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(1, refreshCount) }
+    }
+
+    @Test
+    fun filteredOutCatalogCanBePulledToRefresh() {
+        var refreshCount = 0
+        render(
+            availableState(listOf(accessPoint)).copy(
+                filters = CatalogFilters(category = CatalogCategory.Cameras),
+                filteredProducts = emptyList(),
+            ),
+            onRefresh = { refreshCount++ },
+        )
+
+        pullToRefresh()
+
+        compose.onNodeWithText("Cameras").assertIsSelected()
+        compose.runOnIdle { assertEquals(1, refreshCount) }
+    }
+
+    @Test
+    fun pullToRefreshRestartsFailedObservation() {
+        var refreshCount = 0
+        var retryCount = 0
+        render(
+            availableState().copy(observationFailed = true),
+            onRefresh = { refreshCount++ },
+            onRetry = { retryCount++ },
+        )
+
+        pullToRefresh()
+
+        assertBothProductsVisible()
+        compose.runOnIdle {
+            assertEquals(0, refreshCount)
+            assertEquals(1, retryCount)
+        }
+    }
+
+    @Test
     fun categoryWithoutMatchesShowsFilterMessageForNonemptyCatalog() {
         render(availableState(listOf(accessPoint)).copy(
             filters = CatalogFilters(category = CatalogCategory.Cameras),
@@ -213,7 +317,8 @@ class CatalogScreenTest {
         val products = List(100) { index ->
             camera.copy(id = "product-$index", name = "Product $index")
         }
-        render(availableState(products))
+        var refreshCount = 0
+        render(availableState(products), onRefresh = { refreshCount++ })
 
         compose.onNodeWithText("All").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput {
@@ -229,6 +334,11 @@ class CatalogScreenTest {
         compose.onNodeWithText("All").assertIsDisplayed()
         compose.onNodeWithContentDescription("Filter products").assertIsDisplayed()
         compose.onNodeWithText("Product 0").assertIsNotDisplayed()
+        compose.runOnIdle { assertEquals(0, refreshCount) }
+    }
+
+    private fun pullToRefresh() {
+        compose.onNode(hasScrollAction()).performTouchInput { swipeDown(durationMillis = 600) }
     }
 
     private fun render(

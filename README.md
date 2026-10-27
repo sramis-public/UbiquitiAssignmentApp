@@ -24,7 +24,10 @@ Build and check using the included wrapper:
   a project assumption. Category and product-line filters combine locally without
   extra network requests or database queries.
 - **Caching:** Room persists the catalog across launches. Revalidation runs once
-  per process and on manual refresh, using ETags when available. Failed refreshes
+  per process and on manual refresh, using ETags when available. Pull down at the
+  top of the catalog list to refresh, including empty or filtered results. The
+  refresh indicator follows the request; active filters and saved rows remain
+  visible, and overlapping refreshes are ignored. Failed refreshes
   preserve cached data, and failed reads retain the last observed products. Retry
   restarts failed reads and refreshes. There is no expiry or periodic refresh;
   offline images are not guaranteed.
@@ -49,3 +52,11 @@ Build and check using the included wrapper:
 - **Coil:** asynchronous image loading and image caching.
 - **JUnit, Robolectric, MockWebServer, coroutines-test, Compose UI testing:**
   deterministic data/state tests and fixture-based UI tests.
+
+## Validation
+
+For the pull-to-refresh change, `:app:testDebugUnitTest`, `:app:assembleDebug`,
+`:app:compileDebugAndroidTestKotlin`, and `:app:lintDebug` passed.
+Compose gesture tests cover refresh completion/failure, overlapping pulls, empty
+and filtered results, observation recovery, and scrolling away from the top.
+These device tests were compiled but have not been executed on a device/emulator.

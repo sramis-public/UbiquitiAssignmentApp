@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -42,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -163,58 +163,59 @@ private fun CatalogScreen(
                     },
                     actions = { LineFilterMenu(state.filters.lines, onLineToggled) },
                 )
-                if (state.refresh == CatalogRefreshState.Refreshing &&
-                    state.catalog is CatalogAvailability.Available
-                ) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
             }
         },
     ) { innerPadding ->
         if (state.catalog is CatalogAvailability.Available) {
-            LazyColumn(
-                state = listState,
+            PullToRefreshBox(
+                isRefreshing = state.refresh == CatalogRefreshState.Refreshing,
+                onRefresh = if (state.observationFailed) onRetry else onRefresh,
                 modifier = Modifier.fillMaxSize()
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding),
-                contentPadding = PaddingValues(12.dp),
             ) {
-                if (state.observationFailed || state.refresh is CatalogRefreshState.Failed) {
-                    item(key = "catalog-status", contentType = "status") {
-                        RecoveryNotice(state.observationFailed, onRetry)
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(12.dp),
+                ) {
+                    if (state.observationFailed || state.refresh is CatalogRefreshState.Failed) {
+                        item(key = "catalog-status", contentType = "status") {
+                            RecoveryNotice(state.observationFailed, onRetry)
+                        }
                     }
-                }
-                if (state.filteredProducts.isEmpty()) {
-                    item(key = "catalog-empty", contentType = "empty") {
-                        CatalogMessage(
-                            title = stringResource(R.string.catalog_empty),
-                            message = stringResource(
-                                if (state.catalog.products.isEmpty()) R.string.catalog_empty_description
-                                else R.string.catalog_filters_empty_description,
-                            ),
-                            actionLabel = stringResource(R.string.catalog_refresh),
-                            onAction = onRefresh,
-                            actionEnabled = state.refresh != CatalogRefreshState.Refreshing,
+                    if (state.filteredProducts.isEmpty()) {
+                        item(key = "catalog-empty", contentType = "empty") {
+                            CatalogMessage(
+                                title = stringResource(R.string.catalog_empty),
+                                message = stringResource(
+                                    if (state.catalog.products.isEmpty()) R.string.catalog_empty_description
+                                    else R.string.catalog_filters_empty_description,
+                                ),
+                                actionLabel = stringResource(R.string.catalog_refresh),
+                                onAction = onRefresh,
+                                actionEnabled = state.refresh != CatalogRefreshState.Refreshing,
+                            )
+                        }
+                    }
+                    items(state.filteredProducts, key = { it.id }, contentType = { "product" }) { product ->
+                        ListItem(
+                            headlineContent = {
+                                Text(product.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            },
+                            supportingContent = product.lineName?.let { line ->
+                                { Text(line, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            },
+                            leadingContent = {
+                                ProductImage(product, imageWidth = 48.dp, modifier = Modifier.size(48.dp))
+                            },
+                            trailingContent = {
+                                Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null)
+                            },
+                            modifier = Modifier.clickable { onProductSelected(product) },
                         )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.background)
                     }
-                }
-                items(state.filteredProducts, key = { it.id }, contentType = { "product" }) { product ->
-                    ListItem(
-                        headlineContent = {
-                            Text(product.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        },
-                        supportingContent = product.lineName?.let { line ->
-                            { Text(line, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                        },
-                        leadingContent = {
-                            ProductImage(product, imageWidth = 48.dp, modifier = Modifier.size(48.dp))
-                        },
-                        trailingContent = {
-                            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null)
-                        },
-                        modifier = Modifier.clickable { onProductSelected(product) },
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.background)
                 }
             }
         } else {
