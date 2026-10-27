@@ -18,34 +18,24 @@ Build and check using the included wrapper:
 
 ## Assumptions and tradeoffs
 
-- **Categories:** All includes every product, including missing or unknown device types.
-  Categories use the top-level UIDB `deviceType`: Cameras matches `camera`; IoT
-  matches `sensor`, `light`, `doorlock`, or `chime`. Other, missing, and blank types
-  appear only in All. This exact, case-sensitive mapping is a project decision.
-  Category changes filter the loaded snapshot immediately in source order without
-  network requests or additional Room queries.
-  The separate product-line filter intersects with the category and matches
-  `unifi-network`, `unifi-lte`, `unifi-protect`, and `unifi-access` locally.
-  Selection survives refreshes and configuration changes.
-- **Caching:** Room stores the catalog across launches. Each application process
-  starts one background revalidation using ETags when available. Failed refreshes
-  retain cached data; empty/error states offer Refresh/Retry. There is no expiry
-  or periodic refresh, and offline image availability is not guaranteed.
-  Overlapping refresh requests are ignored by the repository; a later explicit
-  refresh revalidates normally. Room observation runs for the ViewModel's lifetime,
-  including while the UI is inactive, and is cancelled when the ViewModel is cleared.
-  Read failures retain the last observed products; Retry restarts failed observation
-  and requests a refresh. UI state collection remains lifecycle-aware.
-- **Invalid products:** Records with missing, null, or blank IDs/names (including a
-  missing or null product) are skipped. Duplicate IDs keep the first valid record
-  in source order. The remaining products are cached; if none remain, the catalog
-  is empty. Malformed JSON or incorrect field types still fail the refresh and
-  preserve the cache. Logging skipped records and reporting them to the backend
-  remains a TODO.
-- **UI:** Default Material 3 typography and components use the Figma color palette.
-  Dark mode is a project adaptation. Details show the product name and image.
-- **Navigation/state:** Two-screen navigation uses a saveable product ID. Filters
-  survive configuration changes but reset after process death.
+- **Categories:** The project uses exact, case-sensitive UIDB `deviceType` values:
+  Cameras includes `camera`; IoT includes `sensor`, `light`, `doorlock`, and `chime`.
+  All includes every product, including unknown or missing types. This mapping is
+  a project assumption. Category and product-line filters combine locally without
+  extra network requests or database queries.
+- **Caching:** Room persists the catalog across launches. Revalidation runs once
+  per process and on manual refresh, using ETags when available. Failed refreshes
+  preserve cached data, and failed reads retain the last observed products. Retry
+  restarts failed reads and refreshes. There is no expiry or periodic refresh;
+  offline images are not guaranteed.
+- **Data quality:** Products without a valid ID or name are skipped; duplicate IDs
+  keep the first valid record. Malformed JSON or incorrect field types fail the
+  refresh and preserve the cache. Skipped-record reporting is not implemented.
+- **UI:** Material 3 typography and components use the Figma color palette; dark
+  mode is a project adaptation. Details show the image, name, line, and short names.
+  Missing details display an em dash.
+- **Navigation/state:** Navigation saves the selected product ID. Filters survive
+  refreshes and configuration changes but reset after process death.
 
 ## Libraries used and why
 

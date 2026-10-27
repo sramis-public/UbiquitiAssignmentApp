@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "ff9bf5b580d58a549c8ee6101ca8e018",
+    "identityHash": "4aee67ba68f9e1df146c05f353449cbf",
     "entities": [
       {
         "tableName": "catalog_products",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `lineId` TEXT, `lineName` TEXT, `defaultImageId` TEXT, `position` INTEGER NOT NULL, `deviceType` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `lineId` TEXT, `lineName` TEXT, `defaultImageId` TEXT, `position` INTEGER NOT NULL, `deviceType` TEXT, `shortnamesJson` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -45,6 +45,12 @@
             "fieldPath": "deviceType",
             "columnName": "deviceType",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shortnamesJson",
+            "columnName": "shortnamesJson",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -86,7 +92,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ff9bf5b580d58a549c8ee6101ca8e018')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4aee67ba68f9e1df146c05f353449cbf')"
     ]
   }
 }

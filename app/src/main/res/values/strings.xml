@@ -19,6 +19,10 @@
     <string name="catalog_refresh_failed">Products could not be refreshed. Showing the saved catalog.</string>
     <string name="catalog_observation_failed">Catalog updates could not be read. Showing the last loaded products.</string>
     <string name="product_details_title">Product details</string>
+    <string name="product_name_label">Product name</string>
+    <string name="product_line_label">Product line</string>
+    <string name="product_short_names_label">Short names</string>
+    <string name="product_detail_unknown">—</string>
     <string name="navigate_back">Navigate back</string>
     <string name="product_unavailable">Product unavailable</string>
     <string name="product_removed_description">This product is no longer in the catalog.</string>

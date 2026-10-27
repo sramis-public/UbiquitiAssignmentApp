@@ -19,6 +19,17 @@ class CatalogDtoTest {
             CatalogProduct("b", "B", null, null, null)), products)
     }
 
+    @Test fun shortnamesPreserveOrderAndDefaultToEmpty() {
+        val products = parse("""{"devices":[
+            {"id":"a","product":{"name":"A"},"shortnames":["AF-11FX","AF11FX"]},
+            {"id":"b","product":{"name":"B"},"shortnames":null},
+            {"id":"c","product":{"name":"C"}},
+            {"id":"d","product":{"name":"D"},"shortnames":[]}
+        ]}""")
+        assertEquals(listOf("AF-11FX", "AF11FX"), products.first().shortnames)
+        assertTrue(products.drop(1).all { it.shortnames.isEmpty() })
+    }
+
     @Test fun blankOptionalValuesBecomeNull() {
         assertEquals(CatalogProduct("a", "A", null, null, null),
             parse("""{"devices":[{"id":"a","product":{"name":"A"},"line":{"id":"","name":" "},"images":{"default":""},"deviceType":" "}]}""").single())
@@ -38,6 +49,8 @@ class CatalogDtoTest {
     @Test fun malformedCatalogAndWrongTypesFail() {
         listOf(
             "{",
+            """{"devices":[{"id":"a","product":{"name":"A"},"shortnames":"A"}]}""",
+            """{"devices":[{"id":"a","product":{"name":"A"},"shortnames":[{}]}]}""",
             """{"devices":null}""",
             """{"devices":[{"id":"a","product":{"name":"A"},"images":[]}]}""",
             """{"devices":[{"id":"a","product":{"name":"A"},"deviceType":{}}]}""",

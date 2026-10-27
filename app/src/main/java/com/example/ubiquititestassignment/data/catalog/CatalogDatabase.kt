@@ -11,6 +11,8 @@ import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Entity(tableName = "catalog_products")
 internal data class ProductEntity(
@@ -21,8 +23,12 @@ internal data class ProductEntity(
     val defaultImageId: String?,
     val position: Int,
     val deviceType: String? = null,
+    val shortnamesJson: String = "[]",
 ) {
-    fun toProduct() = CatalogProduct(id, name, lineId, lineName, defaultImageId, deviceType)
+    fun toProduct() = CatalogProduct(
+        id, name, lineId, lineName, defaultImageId, deviceType,
+        shortnames = Json.decodeFromString<List<String>>(shortnamesJson),
+    )
 }
 
 @Entity(tableName = "catalog_metadata")
@@ -77,6 +83,7 @@ internal abstract class CatalogDao {
             ProductEntity(
                 product.id, product.name, product.lineId, product.lineName,
                 product.defaultImageId, index, deviceType = product.deviceType,
+                shortnamesJson = Json.encodeToString(product.shortnames),
             )
         })
         putMetadata(CatalogMetadata(etag = etag, lastValidatedAtMillis = validatedAt))

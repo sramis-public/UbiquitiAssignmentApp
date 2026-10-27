@@ -20,7 +20,10 @@ import org.robolectric.annotation.Config
 class CatalogDatabaseTest {
     private lateinit var database: CatalogDatabase
     private val context get() = RuntimeEnvironment.getApplication()
-    private val product = CatalogProduct("a", "A", "raw-line", "Raw Line", "hash", "sensor")
+    private val product = CatalogProduct(
+        "a", "A", "raw-line", "Raw Line", "hash", "sensor",
+        shortnames = listOf("AF-11FX", "AF11FX"),
+    )
 
     @Before fun setUp() {
         database = Room.inMemoryDatabaseBuilder(context, CatalogDatabase::class.java).build()
@@ -29,6 +32,16 @@ class CatalogDatabaseTest {
     @After fun tearDown() {
         database.close()
         context.deleteDatabase("catalog-reopen-test")
+    }
+
+    @Test fun shortnamesAreStoredAsJsonAndDecodedWithoutLosingEscapesOrOrder() = runBlocking {
+        val names = listOf("First", "Quote \" and slash \\", "Line\nbreak", "日本語")
+        val products = listOf(product.copy(shortnames = names), product.copy(id = "empty", shortnames = emptyList()))
+        database.catalogDao().replace(products, null, 10)
+        val entities = database.catalogDao().readProducts()
+        assertEquals(names, kotlinx.serialization.json.Json.decodeFromString<List<String>>(entities.first().shortnamesJson))
+        assertEquals("[]", entities.last().shortnamesJson)
+        assertEquals(products, database.catalogDao().readRecord()!!.toSnapshot().products)
     }
 
     @Test fun distinguishesAbsentAndEmptySnapshot() = runBlocking {
