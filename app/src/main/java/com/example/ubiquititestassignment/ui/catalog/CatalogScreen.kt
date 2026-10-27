@@ -207,7 +207,7 @@ private fun CatalogScreen(
                             { Text(line, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         },
                         leadingContent = {
-                            ProductImage(product, imageWidth = 128, modifier = Modifier.size(48.dp))
+                            ProductImage(product, imageWidth = 48.dp, modifier = Modifier.size(48.dp))
                         },
                         trailingContent = {
                             Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null)

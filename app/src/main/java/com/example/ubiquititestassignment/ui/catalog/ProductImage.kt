@@ -15,8 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.ubiquititestassignment.R
@@ -27,11 +29,12 @@ import com.example.ubiquititestassignment.data.catalog.imageUrl
 @Composable
 fun ProductImage(
     product: CatalogProduct,
-    imageWidth: Int,
+    imageWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val imageUrl = remember(product.id, product.defaultImageId, imageWidth) {
-        product.imageUrl(imageWidth)
+    val imageWidthPx = with(LocalDensity.current) { imageWidth.roundToPx().coerceAtLeast(1) }
+    val imageUrl = remember(product.id, product.defaultImageId, imageWidthPx) {
+        product.imageUrl(imageWidthPx)
     }
     var status by remember(imageUrl) {
         mutableStateOf(if (imageUrl == null) ImageStatus.Missing else ImageStatus.Loading)

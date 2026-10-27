@@ -2,6 +2,7 @@ package com.example.ubiquititestassignment.ui.catalog
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -87,11 +88,13 @@ internal fun ProductDetailsScreen(
                 item {
                     Surface(shape = MaterialTheme.shapes.large) {
                         Column(modifier = Modifier.padding(24.dp)) {
-                            ProductImage(
-                                product,
-                                imageWidth = 768,
-                                modifier = Modifier.fillMaxWidth().height(280.dp),
-                            )
+                            BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                                ProductImage(
+                                    product,
+                                    imageWidth = maxWidth,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
                             Text(
                                 product.name,
                                 style = MaterialTheme.typography.headlineSmall,
